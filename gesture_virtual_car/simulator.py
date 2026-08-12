@@ -25,6 +25,7 @@ class CarSimulator:
 
         # Control Mode ('GESTURE' or 'KEYBOARD')
         self.control_mode = 'GESTURE'
+        self.hand_drive_mode = 'ALL_HANDS_FORWARD'
 
         # Fonts
         self.title_font = pygame.font.SysFont("Consolas", 18, bold=True)
@@ -70,16 +71,21 @@ class CarSimulator:
         # Active Mode & Keys Instruction
         active_mode_str = gesture_data.get('mode', 'MEDIAPIPE')
         mode_color = (0, 255, 150) if self.control_mode == 'GESTURE' else (255, 180, 0)
-        mode_txt = self.hud_font.render(f"MODE: {self.control_mode} [{active_mode_str}]", True, mode_color)
+        
+        hand_drive_mode_str = gesture_data.get('hand_drive_mode', self.hand_drive_mode)
+        hand_mode_desc = "LEFT=FWD/RIGHT=REV" if hand_drive_mode_str == 'LEFT_FORWARD_RIGHT_REVERSE' else "ALL HANDS FWD"
+
+        mode_txt = self.hud_font.render(f"MODE: {self.control_mode} [{active_mode_str}] | OPT: {hand_mode_desc}", True, mode_color)
         self.screen.blit(mode_txt, (15, 32))
 
-        reset_txt = self.val_font.render("Keys: 'K'=Keyboard | 'M'=Model | 'R'=Reset | 'ESC'=Quit", True, (150, 165, 185))
+        reset_txt = self.val_font.render("Keys: 'K'=Keyb | 'M'=Model | 'H'=Hand Option | 'R'=Reset | 'ESC'=Quit", True, (150, 165, 185))
         self.screen.blit(reset_txt, (15, 54))
 
-        # IoT Hardware Status Pill
+        # IoT Hardware Status Pill & Hand Label
+        hand_label_str = gesture_data.get('hand_label', 'NONE')
         iot_status = "PHYSICAL SERIAL: ON" if self.iot.is_connected else "ESP32 MOCK STREAM: READY"
         iot_color = (0, 255, 120) if self.iot.is_connected else (0, 200, 255)
-        iot_txt = self.val_font.render(f"IoT: {iot_status}", True, iot_color)
+        iot_txt = self.val_font.render(f"IoT: {iot_status} | HAND: {hand_label_str.upper()}", True, iot_color)
         self.screen.blit(iot_txt, (15, 76))
 
         # Telemetry Stats Panel (x: 320 to 520)
@@ -88,13 +94,15 @@ class CarSimulator:
             state_color = (0, 220, 255)
         elif state_str == 'CONTROL':
             state_color = (50, 230, 90)
+        elif state_str == 'REVERSE':
+            state_color = (255, 140, 0)
         elif state_str == 'STOP':
             state_color = (255, 60, 60)
         else:
             state_color = (160, 160, 160)
 
         # State Pill Badge
-        badge_rect = pygame.Rect(320, 12, 100, 26)
+        badge_rect = pygame.Rect(320, 12, 110, 26)
         pygame.draw.rect(self.screen, state_color, badge_rect, border_radius=13)
         state_txt = self.hud_font.render(state_str, True, (10, 10, 10))
         st_r = state_txt.get_rect(center=badge_rect.center)
@@ -202,7 +210,8 @@ class CarSimulator:
         self.draw_track_background()
         
         is_braking = (gesture_data.get('state') == 'STOP')
-        self.car.draw(self.screen, is_braking=is_braking)
+        is_reversing = gesture_data.get('is_reverse', False) or (self.car.physics.speed_kmh < -0.1)
+        self.car.draw(self.screen, is_braking=is_braking, is_reversing=is_reversing)
         
         self.draw_hud(gesture_data, camera_frame)
         

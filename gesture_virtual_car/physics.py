@@ -63,8 +63,8 @@ class RealisticAckermannPhysics:
             # Steering self-centers to 0°
             self.steering_delta *= (1.0 - self.steering_return_speed)
         else:
-            # Active Throttle & Steering
-            desired_speed_kmh = self.max_speed_kmh * max(0.0, min(1.0, target_throttle_ratio))
+            # Active Throttle & Steering (Target throttle ratio [-1.0, 1.0])
+            desired_speed_kmh = self.max_speed_kmh * max(-1.0, min(1.0, target_throttle_ratio))
 
             if self.speed_kmh < desired_speed_kmh:
                 self.speed_kmh = min(desired_speed_kmh, self.speed_kmh + self.acceleration_rate)
@@ -77,6 +77,8 @@ class RealisticAckermannPhysics:
         # Apply tire rolling friction
         if self.speed_kmh > 0:
             self.speed_kmh = max(0.0, self.speed_kmh - self.friction_rate)
+        elif self.speed_kmh < 0:
+            self.speed_kmh = min(0.0, self.speed_kmh + self.friction_rate)
 
         # 2. Ackermann Kinematics: Calculate turning angular velocity omega = (v / L) * tan(delta)
         speed_px = self.speed_kmh * 0.35  # Scale km/h to canvas pixels per frame

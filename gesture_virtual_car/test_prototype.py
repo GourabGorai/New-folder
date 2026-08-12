@@ -84,5 +84,47 @@ class TestGestureCarSimulator(unittest.TestCase):
         self.assertIn('speed', res)
         self.assertIn('state', res)
 
+    def test_left_right_hand_driving_option(self):
+        print("\n[Test] Testing Left Hand (Forward) & Right Hand (Reverse) Driving Option...")
+        predictor = GesturePredictor()
+
+        # Left Hand Tracking Result
+        left_hand_tracking = {
+            'detected': True,
+            'normalized_features': np.zeros(63, dtype=np.float32),
+            'is_fist': False,
+            'speed_factor': 0.8,
+            'geometric_angle': 90.0,
+            'hand_label': 'Left'
+        }
+
+        # Right Hand Tracking Result
+        right_hand_tracking = {
+            'detected': True,
+            'normalized_features': np.zeros(63, dtype=np.float32),
+            'is_fist': False,
+            'speed_factor': 0.8,
+            'geometric_angle': 90.0,
+            'hand_label': 'Right'
+        }
+
+        # Test LEFT_FORWARD_RIGHT_REVERSE mode
+        res_left = predictor.predict(left_hand_tracking, hand_drive_mode='LEFT_FORWARD_RIGHT_REVERSE')
+        self.assertGreater(res_left['speed'], 0.0)
+        self.assertEqual(res_left['state'], 'CONTROL')
+        self.assertFalse(res_left['is_reverse'])
+
+        res_right = predictor.predict(right_hand_tracking, hand_drive_mode='LEFT_FORWARD_RIGHT_REVERSE')
+        self.assertLess(res_right['speed'], 0.0) # Speed is negative for Reverse
+        self.assertEqual(res_right['state'], 'REVERSE')
+        self.assertTrue(res_right['is_reverse'])
+
+        # Test Reverse Motor PWM calculation for physical ESP32 car
+        iot = IoTController()
+        pwml_rev, pwmr_rev = iot.calculate_motor_pwm(speed_kmh=-20.0, steering_angle_deg=0.0)
+        self.assertLess(pwml_rev, 0)
+        self.assertLess(pwmr_rev, 0)
+        print(f"[Test] Reverse speed (-20.0 km/h) -> PWML: {pwml_rev}, PWMR: {pwmr_rev} (DC motors reverse rotation)")
+
 if __name__ == '__main__':
     unittest.main()

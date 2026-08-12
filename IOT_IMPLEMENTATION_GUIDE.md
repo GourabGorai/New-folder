@@ -236,11 +236,17 @@ flowchart TD
 
 ### Step 3: Digital Twin Operation & Gesture Testing
 1. Perform hand gestures in front of the webcam:
-   - **Open Palm**: Virtual car drives forward, physical car motors spin forward (`PWML > 0, PWMR > 0`).
+   - **Open Palm / Pointing (Left Hand)**: Virtual car drives forward, physical car motors spin forward (`PWML > 0, PWMR > 0`).
+   - **Open Palm / Pointing (Right Hand in Left=Forward/Right=Reverse Mode)**: Virtual car drives in reverse, physical ESP32 car motors spin in the **opposite direction** (`PWML < 0, PWMR < 0`).
    - **Closed Fist**: Virtual car brakes, ESP32 cuts motor power (`STOP`).
-   - **Thumb Left / Right**: Virtual car turns on screen, physical car executes differential rotation (`PWMR > PWML` or `PWML > PWMR`).
-   - **Peace Sign**: Virtual car reverses, physical car motors rotate backward.
-2. Press `'M'` in the simulator window to toggle between MediaPipe pre-trained rules and custom ML models seamlessly for both virtual and physical cars!
+   - **Thumb/Hand Left / Right**: Virtual car turns on screen, physical car executes differential rotation (`PWMR > PWML` or `PWML > PWMR`).
+2. Keyboard Controls & Mode Toggles:
+   - Press `'H'` to toggle **Hand Drive Option**:
+     - `ALL_HANDS_FORWARD`: Both hands drive forward.
+     - `LEFT_FORWARD_RIGHT_REVERSE`: Left Hand drives Forward; Right Hand drives in Reverse (spinning actual 4 wheels in opposite direction via H-Bridge motor drivers).
+   - Press `'M'` to toggle between MediaPipe pre-trained neural net and custom ML models.
+   - Press `'K'` to toggle Keyboard Mode.
+   - Press `'R'` to reset car position.
 
 ---
 

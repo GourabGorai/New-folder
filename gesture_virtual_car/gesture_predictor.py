@@ -41,21 +41,26 @@ class GesturePredictor:
             self.is_custom_loaded = False
             self.is_loaded = False
 
-    def predict(self, hand_tracking_result, mode=None):
+    def predict(self, hand_tracking_result, mode=None, hand_drive_mode='ALL_HANDS_FORWARD'):
         """
         Args:
             hand_tracking_result: dict output from HandTracker.process_frame()
             mode: optional override ('MEDIAPIPE_PRETRAINED' or 'CUSTOM_ML')
+            hand_drive_mode: 'ALL_HANDS_FORWARD' or 'LEFT_FORWARD_RIGHT_REVERSE'
             
         Returns:
             dict containing:
                 - 'angle': float (0-360)
-                - 'speed': float (0.0 - 1.0)
-                - 'state': str ('CONTROL', 'STOP', 'NO_HAND')
+                - 'speed': float (-1.0 to 1.0)  (Positive = Forward, Negative = Reverse)
+                - 'state': str ('CONTROL', 'REVERSE', 'STOP', 'NO_HAND')
                 - 'confidence': float (0-100)
                 - 'mode': str ('MEDIAPIPE_PRETRAINED', 'CUSTOM_ML')
+                - 'hand_label': str ('Left', 'Right', 'NONE')
+                - 'hand_drive_mode': str
+                - 'is_reverse': bool
         """
         active_mode = mode or self.preferred_mode
+        hand_label = hand_tracking_result.get('hand_label', 'NONE')
 
         if not hand_tracking_result['detected']:
             return {
@@ -63,7 +68,10 @@ class GesturePredictor:
                 'speed': 0.0,
                 'state': 'NO_HAND',
                 'confidence': 0.0,
-                'mode': 'NO_HAND'
+                'mode': 'NO_HAND',
+                'hand_label': 'NONE',
+                'hand_drive_mode': hand_drive_mode,
+                'is_reverse': False
             }
 
         norm_feat = hand_tracking_result['normalized_features']
@@ -78,7 +86,10 @@ class GesturePredictor:
                 'speed': 0.0,
                 'state': 'STOP',
                 'confidence': 98.0,
-                'mode': 'MEDIAPIPE_PRETRAINED' if active_mode == 'MEDIAPIPE_PRETRAINED' else 'CUSTOM_ML'
+                'mode': 'MEDIAPIPE_PRETRAINED' if active_mode == 'MEDIAPIPE_PRETRAINED' else 'CUSTOM_ML',
+                'hand_label': hand_label,
+                'hand_drive_mode': hand_drive_mode,
+                'is_reverse': False
             }
 
         # MODE 1: Direct MediaPipe Pre-trained Neural Network Inference
@@ -108,13 +119,31 @@ class GesturePredictor:
                 used_mode = 'MEDIAPIPE_PRETRAINED'
                 confidence = 90.0
 
+        # Hand Drive Option: LEFT_FORWARD_RIGHT_REVERSE
+        is_reverse = False
+        speed = speed_factor if state == 'CONTROL' else 0.0
+
+        if hand_drive_mode == 'LEFT_FORWARD_RIGHT_REVERSE':
+            if hand_label == 'Right':
+                # Right Hand -> REVERSE driving (actual 4 wheels rotate in opposite direction)
+                speed = -speed
+                if state == 'CONTROL':
+                    state = 'REVERSE'
+                is_reverse = True
+            elif hand_label == 'Left':
+                # Left Hand -> FORWARD driving
+                is_reverse = False
+
         # Apply circular angle smoothing across consecutive frames
         self.smoothed_angle = lerp_angle(self.smoothed_angle, target_angle, alpha=self.smoothing_alpha)
 
         return {
             'angle': self.smoothed_angle,
-            'speed': speed_factor if state == 'CONTROL' else 0.0,
+            'speed': speed,
             'state': state,
             'confidence': confidence,
-            'mode': used_mode
+            'mode': used_mode,
+            'hand_label': hand_label,
+            'hand_drive_mode': hand_drive_mode,
+            'is_reverse': is_reverse
         }

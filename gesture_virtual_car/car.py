@@ -9,10 +9,10 @@ class Car:
         self.color = color
         self.physics = RealisticAckermannPhysics(x=x, y=y)
 
-    def draw(self, surface, is_braking=False):
+    def draw(self, surface, is_braking=False, is_reversing=False):
         """
         Renders a realistic sports car chassis with articulated front turning wheels,
-        headlight beams, brake tail-lights, and trajectory pointer.
+        headlight beams, brake tail-lights, reverse lights, and trajectory pointer.
         """
         # Create chassis surface
         car_surf = pygame.Surface((self.width + 20, self.height + 20), pygame.SRCALPHA)
@@ -51,8 +51,14 @@ class Car:
         pygame.draw.circle(car_surf, hl_color, (offset_x + self.width - 5, offset_y + 7), 3)
         pygame.draw.circle(car_surf, hl_color, (offset_x + self.width - 5, offset_y + self.height - 7), 3)
 
-        # Rear Brake Tail-lights (Bright red glow when braking/stopped)
-        brake_color = (255, 20, 20) if is_braking else (140, 20, 20)
+        # Rear Brake & Reverse Tail-lights
+        if is_braking:
+            brake_color = (255, 20, 20)
+        elif is_reversing or self.physics.speed_kmh < -0.1:
+            brake_color = (255, 240, 200) # Bright white/yellow reverse light glow
+        else:
+            brake_color = (140, 20, 20)
+
         pygame.draw.rect(car_surf, brake_color, (offset_x + 5, offset_y + 5, 3, 5), border_radius=1)
         pygame.draw.rect(car_surf, brake_color, (offset_x + 5, offset_y + self.height - 10, 3, 5), border_radius=1)
 

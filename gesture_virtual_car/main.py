@@ -40,6 +40,7 @@ def main():
 
     running = True
     print("\n[Simulator] Controls:")
+    print("  - Press 'H': Toggle Hand Drive Option (All Hands Forward vs Left=Forward / Right=Reverse)")
     print("  - Press 'M': Toggle between MediaPipe Pre-trained Model & Custom RF Model")
     print("  - Press 'K': Toggle Keyboard Mode")
     print("  - Press 'R': Reset Car Position")
@@ -61,6 +62,14 @@ def main():
                     else:
                         sim.control_mode = 'KEYBOARD'
                         print("[Mode] Switched to KEYBOARD Mode.")
+                elif event.key == pygame.K_h:
+                    # Toggle Hand Drive Option (All Hands Forward vs Left=Forward / Right=Reverse)
+                    if sim.hand_drive_mode == 'ALL_HANDS_FORWARD':
+                        sim.hand_drive_mode = 'LEFT_FORWARD_RIGHT_REVERSE'
+                        print("[Hand Option] Switched to LEFT_FORWARD_RIGHT_REVERSE (Left Hand = Forward, Right Hand = Reverse).")
+                    else:
+                        sim.hand_drive_mode = 'ALL_HANDS_FORWARD'
+                        print("[Hand Option] Switched to ALL_HANDS_FORWARD (All hands drive forward).")
                 elif event.key == pygame.K_m:
                     # Toggle Model Mode (MediaPipe Pretrained vs Custom ML)
                     if predictor.preferred_mode == 'MEDIAPIPE_PRETRAINED':
@@ -81,7 +90,10 @@ def main():
             'speed': 0.0,
             'state': 'STOP',
             'confidence': 0.0,
-            'mode': 'KEYBOARD'
+            'mode': 'KEYBOARD',
+            'hand_label': 'NONE',
+            'hand_drive_mode': sim.hand_drive_mode,
+            'is_reverse': False
         }
 
         if camera_available and cap.isOpened():
@@ -92,7 +104,7 @@ def main():
                 camera_frame = hand_res['annotated_frame']
                 
                 if sim.control_mode == 'GESTURE':
-                    gesture_data = predictor.predict(hand_res)
+                    gesture_data = predictor.predict(hand_res, hand_drive_mode=sim.hand_drive_mode)
 
         # Process Keyboard Inputs if in KEYBOARD Mode
         if sim.control_mode == 'KEYBOARD':

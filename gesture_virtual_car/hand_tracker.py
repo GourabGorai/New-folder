@@ -20,7 +20,7 @@ except ImportError:
 from preprocessing import normalize_landmarks, compute_geometric_angle, is_closed_fist, compute_speed_factor
 
 class HandTracker:
-    def __init__(self, max_num_hands=1, min_detection_confidence=0.7, min_tracking_confidence=0.7):
+    def __init__(self, max_num_hands=2, min_detection_confidence=0.7, min_tracking_confidence=0.7):
         self.mp_hands = mp_hands
         self.hands = self.mp_hands.Hands(
             static_image_mode=False,
@@ -44,6 +44,7 @@ class HandTracker:
                 - 'geometric_angle': float (0-360)
                 - 'is_fist': bool
                 - 'speed_factor': float (0.2-1.0)
+                - 'hand_label': str ('Left', 'Right', 'NONE')
         """
         h, w, c = frame.shape
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -57,12 +58,21 @@ class HandTracker:
             'annotated_frame': annotated_frame,
             'geometric_angle': 90.0,
             'is_fist': False,
-            'speed_factor': 0.0
+            'speed_factor': 0.0,
+            'hand_label': 'NONE'
         }
 
         if results.multi_hand_landmarks:
             # Grab first detected hand
             hand_landmarks = results.multi_hand_landmarks[0]
+
+            # Extract handedness label ('Left' or 'Right')
+            hand_label = 'Right'
+            if results.multi_handedness and len(results.multi_handedness) > 0:
+                try:
+                    hand_label = results.multi_handedness[0].classification[0].label
+                except Exception:
+                    hand_label = 'Right'
 
             # Extract (x, y, z) points
             pts = []
@@ -79,6 +89,18 @@ class HandTracker:
                 self.mp_drawing_styles.get_default_hand_connections_style()
             )
 
+            # Overlay hand label text on frame
+            badge_color = (0, 255, 180) if hand_label == 'Left' else (255, 180, 0)
+            cv2.putText(
+                annotated_frame,
+                f"HAND: {hand_label.upper()}",
+                (15, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                badge_color,
+                2
+            )
+
             norm_features = normalize_landmarks(pts)
             geo_angle = compute_geometric_angle(pts)
             fist = is_closed_fist(pts)
@@ -91,6 +113,7 @@ class HandTracker:
             output['geometric_angle'] = geo_angle
             output['is_fist'] = fist
             output['speed_factor'] = speed
+            output['hand_label'] = hand_label
 
         return output
 
