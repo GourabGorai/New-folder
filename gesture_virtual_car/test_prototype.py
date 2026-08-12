@@ -60,6 +60,7 @@ class TestGestureCarSimulator(unittest.TestCase):
         self.assertEqual(pkt['cmd'], 'DRIVE')
         self.assertIn('pwml', pkt)
         self.assertIn('pwmr', pkt)
+        iot.close()
 
     def test_model_training_and_prediction(self):
         print("\n[Test] Running ML Model Training and Inference Test...")

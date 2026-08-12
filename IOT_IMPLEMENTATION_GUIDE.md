@@ -146,7 +146,9 @@ Using the Virtual View alongside the Physical IoT Car enables side-by-side perfo
   * [gesture_predictor.py](file:///d:/BragBoard-main/New%20folder/gesture_virtual_car/gesture_predictor.py): Real-time gesture classification engine.
 * **IoT Hardware Interface & Firmware**:
   * [iot_controller.py](file:///d:/BragBoard-main/New%20folder/gesture_virtual_car/iot_controller.py): Differential PWM conversion & JSON packet transmitter.
-  * [iot_esp32_car_firmware.ino](file:///d:/BragBoard-main/New%20folder/gesture_virtual_car/iot_firmware/iot_esp32_car_firmware.ino): ESP32 firmware with motor control & 500ms safety watchdog.
+  * [iot_esp32_car_firmware.ino](file:///d:/BragBoard-main/New%20folder/gesture_virtual_car/iot_firmware/iot_esp32_car_firmware/iot_esp32_car_firmware.ino): ESP32 Wi-Fi firmware (Access Point, UDP, Web Remote Control dashboard).
+  * [iot_esp32_bluetooth_car_firmware.ino](file:///d:/BragBoard-main/New%20folder/gesture_virtual_car/iot_firmware/iot_esp32_bluetooth_car_firmware/iot_esp32_bluetooth_car_firmware.ino): Dedicated ESP32 Bluetooth firmware (Bluetooth Serial `ESP32_Car_BT` & RC App support).
+
 
 ---
 
@@ -225,16 +227,28 @@ flowchart TD
 ### Step 1: Hardware Assembly & ESP32 Flashing
 1. Assemble the 4WD chassis and complete circuit connections per Section 6.2.
 2. Open [iot_esp32_car_firmware.ino](file:///d:/BragBoard-main/New%20folder/gesture_virtual_car/iot_firmware/iot_esp32_car_firmware.ino) in Arduino IDE or VS Code PlatformIO.
-3. Select board `ESP32 Dev Module` and flash the code. Connect ESP32 to laptop via USB or configure Wi-Fi credentials.
+3. Select board `ESP32 Dev Module` and flash the code.
 
-### Step 2: Launch Integrated Simulator & IoT Bridge
-1. Run [main.py](file:///d:/BragBoard-main/New%20folder/gesture_virtual_car/main.py):
+### Step 2: Wireless IoT Car Connection Options (Wi-Fi Only)
+The updated firmware supports **strictly Wi-Fi wireless control**:
+- **Wi-Fi Access Point (AP Mode)**: ESP32 automatically creates a Wi-Fi network:
+  - **SSID**: `ESP32_Car_WiFi`
+  - **Password**: `12345678`
+  - **Static IP**: `192.168.4.1`
+- **Wi-Fi UDP Telemetry Stream**: Python (`IoTController`) transmits JSON gesture telemetry packets wirelessly over UDP port `8888` (<10ms low latency).
+- **Embedded Web Remote Control (HTTP Web Server)**: Connect any phone or laptop to `ESP32_Car_WiFi` and navigate to `http://192.168.4.1` in any browser to access an interactive touch remote control dashboard (Forward, Reverse, Left, Right, Stop, and Speed slider).
+- **USB Hardware Serial**: Plug in USB cable for wired fallback and serial monitoring.
+
+
+### Step 3: Launch Integrated Simulator & IoT Bridge
+1. Connect your PC/laptop to the car's Wi-Fi (`ESP32_Car_WiFi`).
+2. Run [main.py](file:///d:/BragBoard-main/New%20folder/gesture_virtual_car/main.py):
    ```bash
    python main.py
    ```
-2. The Pygame window will launch, initializing the single ML vision pipeline and opening the webcam feed.
+3. The Pygame window will launch, initializing the AI vision pipeline, webcam feed, and wireless UDP telemetry bridge.
 
-### Step 3: Digital Twin Operation & Gesture Testing
+### Step 4: Digital Twin Operation & Gesture Testing
 1. Perform hand gestures in front of the webcam:
    - **Open Palm / Pointing (Left Hand)**: Virtual car drives forward, physical car motors spin forward (`PWML > 0, PWMR > 0`).
    - **Open Palm / Pointing (Right Hand in Left=Forward/Right=Reverse Mode)**: Virtual car drives in reverse, physical ESP32 car motors spin in the **opposite direction** (`PWML < 0, PWMR < 0`).
@@ -253,3 +267,4 @@ flowchart TD
 ## 8. Conclusion
 
 By integrating the **Pygame Virtual Car Simulator** with the **Physical ESP32 IoT Car** under a **single unified AI vision pipeline**, this architecture eliminates redundant ML model training. The virtual simulator serves as a live **Digital Twin**, permitting real-time visual telemetry monitoring and side-by-side motion comparison between software physics and hardware execution.
+
